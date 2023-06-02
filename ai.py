@@ -1,33 +1,35 @@
+import requests
 from flask import Flask, request, jsonify
-import random
+import time
+
+AI_DUNGEON_API_URL = "https://api.aidungeon.io/generate"
+
+# Define a function to generate responses using the AI Dungeon API
+def generate_response(user_input):
+    try_count = 0
+    while try_count < 3:
+        try:
+            payload = {
+                "story": [f"User: {user_input}\nAI:"],
+                "temperature": 0.7,
+                "max_tokens": 64,
+                "prompt": "",
+                "frequency_penalty": 0,
+                "presence_penalty": 0
+            }
+
+            response = requests.post(AI_DUNGEON_API_URL, json=payload)
+            response.raise_for_status()
+            result = response.json()["data"][0]["text"].strip()
+            
+            return result
+        except requests.exceptions.RequestException:
+            try_count += 1
+            time.sleep(1)
+    
+    raise Exception("Failed to generate response")
 
 app = Flask(__name__)
-
-# Define some responses for the chatbot
-greetings = ["hello", "hi", "hey", "greetings", "yo"]
-farewells = ["bye", "goodbye", "see you later", "adios"]
-questions = ["how are you?", "what's up?", "how's your day?", "how's it going?"]
-responses = ["I'm fine, thank you.", "Not much, just chatting with you.", "My day is going well, thank you for asking."]
-
-# Define a function to generate responses
-def generate_response(user_input):
-    # Check for a greeting
-    for word in user_input.split():
-        if word.lower() in greetings:
-            return random.choice(greetings).capitalize() + "! How can I help you?"
-    
-    # Check for a farewell
-    for word in user_input.split():
-        if word.lower() in farewells:
-            return random.choice(farewells).capitalize() + "! Thanks for chatting with me."
-    
-    # Checkfor a question
-    for word in user_input.split():
-        if word.lower() in questions:
-            return random.choice(responses)
-    
-    # If no special input was detected, provide a generic response
-    return "I'm sorry, I didn't understand what you said."
 
 # Define an API endpoint for the chatbot
 @app.route("/api/chatbot", methods=["POST"])
@@ -35,8 +37,11 @@ def chatbot():
     # Get user input from request
     user_input = request.json["input"]
     
-    # Generate response from chatbot
-    response = generate_response(user_input)
+    # Generate response from chatbot using the AI Dungeon API
+    try:
+        response = generate_response(user_input)
+    except Exception as e:
+        response = str(e)
     
     # Return response as JSON
     return jsonify({ "output": response })
