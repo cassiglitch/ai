@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Chatbot</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+        }
+        .chatbot-container {
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        .chatbot-messages {
+            list-style: none;
+            padding: 0;
+        }
+        .chatbot-message {
+            display: flex;
+            flex-direction: row;
+            align-items: flex-start;
+            margin-bottom: 10px;
+        }
+        .chatbot-message-avatar {
+            width: 30px;
+            height: 30px;
+            margin-right: 10px;
+            border-radius: 50%;
+            background-color: #ccc;
+        }
+        .chatbot-message-content {
+            flex: 1;
+            border-radius: 10px;
+            padding: 10px;
+            background-color: #f1f0f0;
+        }
+        .chatbot-message-content-user {
+            background-color: #e5f6ff;
+            align-self: flex-end;
+            border-top-right-radius: 0;
+        }
+        .chatbot-message-content-chatbot {
+            background-color: #f1f0f0;
+            border-top-left-radius: 0;
+        }
+        .chatbot-input {
+            width: 100%;
+            padding: 10px;
+            border-radius: 10px;
+            border: none;
+            margin-top: 10px;
+        }
+        .chatbot-submit {
+            width: 100%;
+            padding: 10px;
+            border-radius: 10px;
+            border: none;
+            background-color: #4CAF50;
+            color: white;
+            font-weight: bold;
+            margin-top: 10px;
+            cursor: pointer;
+        }
+    </style>
+</head>
+<body>
+    <div class="chatbot-container">
+        <h1>Chatbot</h1>
+        <ul class="chatbot-messages" id="chatbot-messages">
+            <li class="chatbot-message chatbot-message-content-chatbot">
+                <div class="chatbot-message-avatar"></div>
+                <div class="chatbot-message-content">
+                    Hi! How can I help you?
+                </div>
+            </li>
+        </ul>
+        <input type="text" class="chatbot-input" id="chatbot-input" placeholder="Type your message...">
+        <button class="chatbot-submit" id="chatbot-submit">Send</button>
+    </div>
+    <script>
+        const chatbotMessages = document.getElementById("chatbot-messages");
+        const chatbotInput = document.getElementById("chatbot-input");
+        const chatbotSubmit = document.getElementById("chatbot-submit");
+
+        function addChatbotMessage(message, isUser) {
+            const messageClass = isUser ? "chatbot-message-content-user" : "chatbot-message-content-chatbot";
+            const messageAvatar = isUser ? "" : `<div class="chatbot-message-avatar"></div>`;
+            const messageHTML = `
+                <li class="chatbot-message ${messageClass}">
+                    ${messageAvatar}
+                    <div class="chatbot-message-content">
+                        ${message}
+                    </div>
+                </li>
+            `;
+            chatbotMessages.insertAdjacentHTML("beforeend", messageHTML);
+        }
+
+        function sendChatbotMessage() {
+            const userInput = chatbotInput.value;
+            chatbotInput.value = "";
+
+            if (userInput.trim() === "") {
+                return;
+            }
+
+            addChatbotMessage(userInput, true);
+
+            fetch("/api/chatbot", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ input: userInput })
+            })
+            .then(response => response.json())
+            .then(data => {
+                const chatbotResponse = data.output;
+                addChatbotMessage(chatbotResponse, false);
+            })
+            .catch(error => {
+                console.error(error);
+                addChatbotMessage("Sorry, an error occurred.", false);
+            });
+        }
+
+        chatbotSubmit.addEventListener("click", sendChatbotMessage);
+        chatbotInput.addEventListener("keydown", event => {
+            if (event.key === "Enter") {
+                sendChatbotMessage();
+            }
+        });
+    </script>
+</body>
+</html>
