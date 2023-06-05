@@ -1,105 +1,137 @@
 <!DOCTYPE html>
 <html>
-  <head>
-    <meta charset="UTF-8">
-    <title>  Isogle  </title>
-    <link rel="stylesheet" href="styles.css">
-  </head>
-  <body>
-    <header>
-      <h1>Chatbot Test</h1>
-    </header>
+<head>
+	<title>  Isogle  </title>
+	<style>
+		#search-container {
+			margin: 20px;
+		}
 
-    <main>
-      <section id="search">
-        <h2>Search</h2>
-        <div class="search-container">
-          <input type="text" id="search-input" placeholder="Enter search query">
-          <button id="search-button">Search</button>
-        </div>
-        <div id="search-results"></div>
-      </section>
+		#search-input {
+			width: 100%;
+			font-size: 16px;
+			padding: 10px;
+			border-radius: 5px;
+			border: 1px solid #ccc;
+		}
 
-      <section id="chat">
-        <h2>Chat</h2>
-        <div class="chat-container">
-          <div id="chat-output"></div>
-          <form id="chat-form">
-            <input type="text" id="user-input" placeholder="Ask me anything">
-            <button type="submit">Send</button>
-          </form>
-        </div>
-      </section>
-    </main>
+		#search-results {
+			margin-top: 10px;
+		}
 
-    <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@3.8.0/dist/tf.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/@tensorflow-models/universal-sentence-encoder@4.0.0/dist/universal-sentence-encoder.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/deepai/dist/deepai.min.js"></script>
-    <script src="script.js"></script>
+		#chat-container {
+			margin: 20px;
+		}
 
-    <script>
-      // Google Custom Search API
-      const apiKey = 'YOUR_API_KEY';
-      const searchEngineId = '718cd7b701a714611';
-      const searchInput = document.getElementById('search-input');
-      const searchResults = document.getElementById('search-results');
+		#chat-output {
+			height: 200px;
+			overflow-y: scroll;
+			border: 1px solid #ccc;
+			padding: 10px;
+		}
 
-      searchInput.addEventListener('keydown', async (event) => {
-        if (event.key === 'Enter') {
-          const query = searchInput.value;
-          const url = `https://www.googleapis.com/customsearch/v1?key=${apiKey}&cx=${searchEngineId}&q=${query}`;
+		#chat-form {
+			display: flex;
+			margin-top: 10px;
+		}
 
-          try {
-            const response = await fetch(url);
-            const data = await response.json();
-            const items = data.items;
+		#user-input {
+			flex: 1;
+			font-size: 16px;
+			padding: 10px;
+			border-radius: 5px;
+			border: 1px solid #ccc;
+		}
 
-            searchResults.innerHTML = '';
+		#chat-form button {
+			font-size: 16px;
+			padding: 10px;
+			border-radius: 5px;
+			border: none;
+			background-color: #4CAF50;
+			color: #fff;
+			margin-left: 10px;
+		}
+	</style>
+</head>
+<body>
+	<div id="search-container">
+		<input type="text" id="search-input" placeholder="Search...">
+		<div id="search-results"></div>
+	</div>
 
-            for (const item of items) {
-              const title = item.title;
-              const link = item.link;
-              const snippet = item.snippet;
+	<div id="chat-container">
+		<div id="chat-output"></div>
+		<form id="chat-form">
+			<input type="text" id="user-input" placeholder="Type your message...">
+			<button type="submit">Send</button>
+		</form>
+	</div>
 
-              const resultDiv = document.createElement('div');
-              resultDiv.innerHTML = `<h3><a href="${link}">${title}</a></h3><p>${snippet}</p>`;
-              searchResults.appendChild(resultDiv);
-            }
-          } catch (err) {
-            console.error(err);
-            searchResults.innerHTML = '<p>There was an error retrieving search results. Please try again later.</p>';
-          }
-        }
-      });
+	<script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@3.8.0"></script>
+	<script src="https://cdn.jsdelivr.net/npm/@tensorflow-models/universal-sentence-encoder@4.0.0"></script>
+	<script src="https://cdn.jsdelivr.net/npm/deepai/dist/deepai.min.js"></script>
 
-      // DeepAI API
-      const chatOutput = document.getElementById('chat-output');
-      const userInput = document.getElementById('user-input');
-      const deepaiApiKey = '9b3ba361-5ed2-466b-a831-5f9a722bc612';
+	<script>
+		const apiKey = 'AIzaSyAwydGicPoEr05z1a1b6W06V2Wzl-_NVxo';
+		const searchEngineId = '718cd7b701a714611';
+		const searchInput = document.getElementById('search-input');
+		const searchResults = document.getElementById('search-results');
+		const chatOutput = document.getElementById('chat-output');
+		const userInput = document.getElementById('user-input');
+		const deepaiApiKey = '9b3ba361-5ed2-466b-a831-5f9a722bc612';
 
-      async function generateChatbotResponse(inputText) {
-        try {
-          const model = await use.load();
-          const embeddings = await model.embed([inputText]);
-          const response = await deepai.callStandardApi('text-generator', { prompt: embeddings.arraySync() }, deepaiApiKey);
-          const generatedText = response.output;
+		async function generateChatbotResponse(inputText) {
+			try {
+				const model = await use.load();
+				const embeddings = await model.embed([inputText]);
+				const response = await deepai.callStandardApi('text-generator', { prompt: embeddings.arraySync() }, deepaiApiKey);
+				const generatedText = response.output;
 
-          chatOutput.innerHTML += `<div class="chat-message chatbot-message"><p>${generatedText}</p></div>`;
-        } catch (err) {
-          console.error(err);
-          chatOutput.innerHTML += '<div class="chat-message chatbot-message"><p>There was an error generating the chatbot response. Please try again later.</p></div>';
-        }
-      }
+				if (inputText.toLowerCase().startsWith('search')) {
+					const query = inputText.substring(7);
+					const url = `https://www.googleapis.com/customsearch/v1?key=${apiKey}&cx=${searchEngineId}&q=${query}`;
 
-      document.getElementById('chat-form').addEventListener('submit', async (event) => {
-        event.preventDefault();
+					try {
+						const response = await fetch(url);
+						const data = await response.json();
+						const items = data.items;
 
-        const inputText = userInput.value;
-        chatOutput.innerHTML += `<div class="chat-message user-message"><p>${inputText}</p></div>`;
-        await generateChatbotResponse(inputText);
+						searchResults.innerHTML = '';
 
-        userInput.value = '';
-      });
-    </script>
-  </body>
+						for (const item of items) {
+							const title = item.title;
+							const link = item.link;
+							const snippet = item.snippet;
+
+							const resultDiv = document.createElement('div');
+							resultDiv.innerHTML = `<h3><a href="${link}">${title}</a></h3><p>${snippet}</p>`;
+							searchResults.appendChild(resultDiv);
+						}
+					} catch (err) {
+						console.error(err);
+						searchResults.innerHTML = '<p>There was an error retrieving search results. Please try again later.</p>';
+					}
+
+					chatOutput.innerHTML += `<p>Here are the search results for "${query}":</p>`;
+				} else {
+					chatOutput.innerHTML += `<p>${generatedText}</p>`;
+				}
+			} catch (err) {
+				console.error(err);
+				chatOutput.innerHTML += '<p>There was an error generating the chatbot response. Please try again later.</p>';
+			}
+		}
+
+		document.getElementById('chat-form').addEventListener('submit', async (event) => {
+			event.preventDefault();
+
+			const inputText = userInput.value;
+			chatOutput.innerHTML += `<p>You: ${inputText}</p>`;
+			await generateChatbotResponse(inputText);
+
+			userInput.value = '';
+		});
+	</script>
+</body>
 </html>
