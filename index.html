@@ -3,27 +3,43 @@
   <head>
     <meta charset="UTF-8">
     <title>Chatbot Test</title>
+    <link rel="stylesheet" href="style.css">
   </head>
   <body>
-    <h1>Chatbot Test</h1>
+    <header>
+      <h1>Chatbot Test</h1>
+    </header>
 
-    <h2>Search</h2>
-    <input type="text" id="search-input" placeholder="Enter search query">
-    <div id="search-results"></div>
+    <main>
+      <section id="search">
+        <h2>Search</h2>
+        <div class="search-container">
+          <input type="text" id="search-input" placeholder="Enter search query">
+          <button id="search-button">Search</button>
+        </div>
+        <div id="search-results"></div>
+      </section>
 
-    <h2>Chat</h2>
-    <form id="chat-form">
-      <input type="text" id="user-input" placeholder="Ask me anything">
-      <button type="submit">Send</button>
-    </form>
-    <div id="chat-output"></div>
+      <section id="chat">
+        <h2>Chat</h2>
+        <div class="chat-container">
+          <div id="chat-output"></div>
+          <form id="chat-form">
+            <input type="text" id="user-input" placeholder="Ask me anything">
+            <button type="submit">Send</button>
+          </form>
+        </div>
+      </section>
+    </main>
 
     <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@3.8.0/dist/tf.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@tensorflow-models/universal-sentence-encoder@4.0.0/dist/universal-sentence-encoder.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/deepai/dist/deepai.min.js"></script>
+    <script src="script.js"></script>
+
     <script>
       // Google Custom Search API
-      const apiKey = 'AIzaSyAwydGicPoEr05z1a1b6W06V2Wzl-_NVxo';
+      const apiKey = 'YOUR_API_KEY';
       const searchEngineId = '718cd7b701a714611';
       const searchInput = document.getElementById('search-input');
       const searchResults = document.getElementById('search-results');
@@ -68,10 +84,10 @@
           const response = await deepai.callStandardApi('text-generator', { prompt: embeddings.arraySync() }, deepaiApiKey);
           const generatedText = response.output;
 
-          chatOutput.innerHTML = `<p>${generatedText}</p>`;
+          chatOutput.innerHTML += `<div class="chat-message chatbot-message"><p>${generatedText}</p></div>`;
         } catch (err) {
           console.error(err);
-          chatOutput.innerHTML = '<p>There was an error generating the chatbot response. Please try again later.</p>';
+          chatOutput.innerHTML += '<div class="chat-message chatbot-message"><p>There was an error generating the chatbot response. Please try again later.</p></div>';
         }
       }
 
@@ -79,6 +95,7 @@
         event.preventDefault();
 
         const inputText = userInput.value;
+        chatOutput.innerHTML += `<div class="chat-message user-message"><p>${inputText}</p></div>`;
         await generateChatbotResponse(inputText);
 
         userInput.value = '';
