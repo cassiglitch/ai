@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html>
 <head>
-	<title>Isogle - Search, AI, And Content Generation </title>
+	<title>  Isogle - Search and AI  </title>
 	<style>
 		#search-container {
 			margin: 20px;
@@ -85,6 +85,8 @@
 			try {
 				const model = await use.load();
 				const embeddings = await model.embed([inputText]);
+				const response = await deepai.callStandardApi('text-generator', { prompt: embeddings.arraySync() }, deepaiApiKey);
+				const generatedText = response.output;
 
 				if (inputText.toLowerCase().startsWith('search')) {
 					const query = inputText.substring(7);
@@ -112,91 +114,23 @@
 					}
 
 					chatOutput.innerHTML += `<p>Here are the search results for "${query}":</p>`;
-				} else if (inputText.toLowerCase().startsWith('generate image')) {
-					const style = inputText.substring(15);
-					const response = await deepai.callStandardApi('image-generator', { model: 'text2img', text: style }, deepaiApiKey);
-					const imageUrl = response.output_url;
-
-					chatOutput.innerHTML += `<p>Here's an image generated from the text "${style}":</p><img src="${imageUrl}" alt="Generated image">`;
-				} else if (inputText.toLowerCase().startsWith('summarize video')) {
-					const videoUrl = inputText.substring(16);
-					const response = await deepai.callStandardApi('video-summarization', { url: videoUrl }, deepaiApiKey);
-					const summaryUrl = response.output_url;
-
-					chatOutput.innerHTML += `<p>Here's a summary of the video at "${videoUrl}":</p><video controls><source src="${summaryUrl}" type="video/mp4"></video>`;
-				} else if (inputText.toLowerCase().startsWith('classify video')) {
-					const videoUrl = inputText.substring(15);
-					const response = await deepai.callStandardApi('video-classifier', { url: videoUrl }, deepaiApiKey);
-					const classes = response.output.classes;
-
-					let classList = '';
-					for (const cls of classes) {
-						classList += `<li>${cls.class_name}: ${cls.confidence.toFixed(2)}</li>`;
-					}
-
-					chatOutput.innerHTML += `<p>Here are the classifications for the video at "${videoUrl}":</p><ul>${classList}</ul>`;
 				} else {
-					const response = await fetch('/chatbot', {
-						method: 'POST',
-						headers: {
-							'Content-Type': 'application/json'
-						},
-						body: JSON.stringify({ inputText })
-					});
-
-					const data = await response.json();
-					const chatbotResponse = data.chatbotResponse;
-
-					chatOutput.innerHTML += `<p><strong>You:</strong> ${inputText}</p><p><strong>Chatbot:</strong> ${chatbotResponse}</p>`;
+					chatOutput.innerHTML += `<p>${generatedText}</p>`;
 				}
-
-				chatOutput.scrollTop = chatOutput.scrollHeight;
 			} catch (err) {
 				console.error(err);
-				chatOutput.innerHTML += '<p>There was an error processing your request. Please try again later.</p>';
-				chatOutput.scrollTop = chatOutput.scrollHeight;
+				chatOutput.innerHTML += '<p>There was an error generating the chatbot response. Please try again later.</p>';
 			}
 		}
 
-		document.getElementById('chat-form').addEventListener('submit', (e) => {
-			e.preventDefault();
-			const inputText = userInput.value.trim();
+		document.getElementById('chat-form').addEventListener('submit', async (event) => {
+			event.preventDefault();
 
-			if (inputText !== '') {
-				generateChatbotResponse(inputText);
-				userInput.value = '';
-			}
-		});
+			const inputText = userInput.value;
+			chatOutput.innerHTML += `<p>You: ${inputText}</p>`;
+			await generateChatbotResponse(inputText);
 
-		searchInput.addEventListener('input', async () => {
-			const query = searchInput.value.trim();
-
-			if (query !== '') {
-				const url = `https://www.googleapis.com/customsearch/v1?key=${apiKey}&cx=${searchEngineId}&q=${query}&fields=items(title,link,snippet)`;
-
-				try {
-					const response = await fetch(url);
-					const data = await response.json();
-					const items = data.items;
-
-					searchResults.innerHTML = '';
-
-					for (const item of items) {
-						const title = item.title;
-						const link = item.link;
-						const snippet = item.snippet;
-
-						const resultDiv = document.createElement('div');
-						resultDiv.innerHTML = `<h3><a href="${link}">${title}</a></h3><p>${snippet}</p>`;
-						searchResults.appendChild(resultDiv);
-					}
-				} catch (err) {
-					console.error(err);
-					searchResults.innerHTML = '<p>There was an error retrieving search results. Please try again later.</p>';
-				}
-			} else {
-				searchResults.innerHTML = '';
-			}
+			userInput.value = '';
 		});
 	</script>
 </body>
