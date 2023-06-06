@@ -84,38 +84,38 @@
 			try {
 				const model = await use.load();
 				const embeddings = await model.embed([inputText]);
-				const response = await deepai.callStandardApi('text-generator', { prompt: embeddings.arraySync() }, 9b3ba361-5ed2-466b-a831-5f9a722bc612);
+
+				// Call DeepAI API using the callStandardApi method
+				const response = await deepai.callStandardApi('text-generator', { prompt: embeddings.arraySync() }, deepaiApiKey);
 				const generatedText = response.output;
+				chatOutput.innerHTML += `<p>${generatedText}</p>`;
 
-				if (inputText.toLowerCase().startsWith('search')) {
-					const query = inputText.substring(7);
-					const url = `https://www.googleapis.com/customsearch/v1?key=${apiKey}&cx=${searchEngineId}&q=${query}`;
+				// Call DeepAI API using the callApi method with fetch
+				const apiEndpoint = 'https://api.deepai.org/api/text-generator';
+				const response2 = await fetch(apiEndpoint, {
+					method: 'POST',
+					headers: { 'Api-Key': deepaiApiKey },
+					body: JSON.stringify({ text: inputText })
+				});
+				const data = await response2.json();
+				const generatedText2 = data.output;
+				chatOutput.innerHTML += `<p>${generatedText2}</p>`;
 
-					try {
-						const response = await fetch(url);
-						const data = await response.json();
-						const items = data.items;
+				// Call DeepAI API using the callApi method with XMLHttpRequest
+				const xhr = new XMLHttpRequest();
+				xhr.open('POST', apiEndpoint);
+				xhr.setRequestHeader('Api-Key', deepaiApiKey);
+				xhr.setRequestHeader('Content-Type', 'application/json');
+				xhr.onload = function() {
+					const data = JSON.parse(xhr.responseText);
+					const generatedText3 = data.output;
+					chatOutput.innerHTML += `<p>${generatedText3}</p>`;
+				};
+				xhr.onerror = function() {
+					chatOutput.innerHTML += '<p>There was an error generating the chatbot response using XMLHttpRequest. Please try again later.</p>';
+				};
+				xhr.send(JSON.stringify({ text: inputText }));
 
-						searchResults.innerHTML = '';
-
-						for (const item of items) {
-							const title = item.title;
-							const link = item.link;
-							const snippet = item.snippet;
-
-							const resultDiv = document.createElement('div');
-							resultDiv.innerHTML = `<h3><a href="${link}">${title}</a></h3><p>${snippet}</p>`;
-							searchResults.appendChild(resultDiv);
-						}
-					} catch (err) {
-						console.error(err);
-						searchResults.innerHTML = '<p>There was an error retrieving search results. Please try again later.</p>';
-					}
-
-					chatOutput.innerHTML += `<p>Here are the search results for "${query}":</p>`;
-				} else {
-					chatOutput.innerHTML += `<p>${generatedText}</p>`;
-				}
 			} catch (err) {
 				console.error(err);
 				chatOutput.innerHTML += '<p>There was an error generating the chatbot response. Please try again later.</p>';
@@ -128,9 +128,36 @@
 			const inputText = userInput.value;
 			chatOutput.innerHTML += `<p>You: ${inputText}</p>`;
 			await generateChatbotResponse(inputText);
-
 			userInput.value = '';
 		});
+
+		// Example of handling authentication errors when calling the DeepAI API using the callApi method
+		deepai.callApi('text-generator', { prompt: 'Hello, World!' }, 'invalidApiKey')
+			.then(response => {
+				console.log(response);
+			})
+			.catch(err => {
+				if (err.status === 401) {
+					console.error('Invalid API key.');
+				} else {
+					console.error('There was an error calling the DeepAI API.');
+				}
+			});
+
+		// Example of handling rate limit errors when calling the DeepAI API using the callApi method
+		for (let i = 0; i < 10; i++) {
+			deepai.callApi('text-generator', { prompt: 'Hello, World!' }, deepaiApiKey)
+				.then(response => {
+					console.log(response);
+				})
+				.catch(err => {
+					if (err.status === 429) {
+						console.error('Rate limit exceeded. Please try again later.');
+					} else {
+						console.error('There was an error calling the DeepAI API.');
+					}
+				});
+		}
 	</script>
 </body>
 </html>
