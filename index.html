@@ -84,7 +84,7 @@
 			try {
 				const model = await use.load();
 				const embeddings = await model.embed([inputText]);
-				const response = await deepai.callStandardApi('text-generator', { prompt: embeddings.arraySync() }, deepaiApiKey);
+				const response = await deepai.callStandardApi('text-generator', { prompt: embeddings.arraySync() }, 9b3ba361-5ed2-466b-a831-5f9a722bc612);
 				const generatedText = response.output;
 
 				if (inputText.toLowerCase().startsWith('search')) {
