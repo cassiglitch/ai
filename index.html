@@ -1,221 +1,255 @@
 <!DOCTYPE html>
 <html>
 <head>
-	<title>Isogle - Search and AI</title>
-	<style>
-		#search-container {
-			margin: 20px;
-		}
-
-		#search-input {
-			width: 100%;
-			font-size: 16px;
-			padding: 10px;
-			border-radius: 5px;
-			border: 1px solid #ccc;
-		}
-
-		#search-results {
-			margin-top: 10px;
-		}
-
-		#chat-container {
-			margin: 20px;
-		}
-
-		#chat-output {
-			height: 200px;
-			overflow-y: scroll;
-			border: 1px solid #ccc;
-			padding: 10px;
-		}
-
-		#chat-form {
-			display: flex;
-			margin-top: 10px;
-		}
-
-		#user-input {
-			flex: 1;
-			font-size: 16px;
-			padding: 10px;
-			border-radius: 5px;
-			border: 1px solid #ccc;
-		}
-
-		#chat-form button {
-			font-size: 16px;
-			padding: 10px;
-			border-radius: 5px;
-			border: none;
-			background-color: #4CAF50;
-			color: #fff;
-			margin-left: 10px;
-		}
-	</style>
+  <meta charset="UTF-8">
+  <title>Isogle - Search and AI</title>
+<style>
+    body {
+      font-family: Arial, sans-serif;
+      margin: 0;
+      padding: 0;
+      background-color: #f5f5f5;
+    }
+    h1 {
+      font-size: 2rem;
+      font-weight: bold;
+      margin: 0;
+      padding: 1rem;
+      text-align: center;
+      background-color: #007bff;
+      color: #fff;
+    }
+    .container {
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+    }
+    form {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      margin: 1rem;
+    }
+    input[type="text"] {
+      font-size: 1rem;
+      padding: 0.5rem;
+      border-radius: 0.25rem;
+      border: none;
+      box-shadow: 0 0 0.25rem rgba(0, 0, 0, 0.2);
+    }
+    button[type="submit"] {
+      font-size: 1rem;
+      font-weight: bold;
+      margin-left: 0.5rem;
+      padding: 0.5rem 1rem;
+      border-radius: 0.25rem;
+      border: none;
+      background-color: #dc3545;
+      color: #fff;
+      box-shadow: 0 0 0.25rem rgba(0, 0, 0, 0.2);
+      cursor: pointer;
+    }
+    #chat-output {
+      display: flex;
+      flex-direction: column;
+      justify-content: flex-start;
+      align-items: flex-start;
+      margin: 1rem;
+      padding: 1rem;
+      width: 100%;
+      max-height: 50vh;
+      overflow-y: auto;
+      box-shadow: 0 0 0.25rem rgba(0, 0, 0, 0.2);
+      background-color: #fff;
+    }
+    #chat-output p {
+      margin: 0;
+      padding: 0.25rem 0;
+    }
+    #search-input {
+      font-size: 1rem;
+      padding: 0.5rem;
+      border-radius: 0.25rem;
+      border: none;
+      box-shadow: 0 0 0.25rem rgba(0, 0, 0, 0.2);
+      margin: 1rem;
+    }
+    #search-results {
+      margin: 1rem;
+      padding: 1rem;
+      width: 100%;
+      max-height: 50vh;
+      overflow-y: auto;
+      box-shadow: 0 0 0.25rem rgba(0, 0, 0, 0.2);
+      background-color: #fff;
+    }
+    #search-results div {
+      margin-bottom: 1rem;
+    }
+    #search-results a {
+      font-weight: bold;
+      color: #007bff;
+      text-decoration: none;
+    }
+    #search-results a:hover {
+      text-decoration: underline;
+    }
+  </style>
 </head>
 <body>
-	<div id="search-container">
-		<input type="text" id="search-input" placeholder="Search...">
-		<div id="search-results"></div>
-	</div>
+  <h1> Isogle </h1>
+  <form id="chat-form">
+    <label for="user-input">User Input:</label>
+    <input type="text" id="user-input" name="user-input">
+    <button type="submit">Send</button>
+  </form>
+  <h2>Chat Output:</h2>
+  <div id="chat-output"></div>
+  <h2>Search:</h2>
+  <input type="text" id="search-input" name="search-input">
+  <div id="search-results"></div>
+  
+  <script src="https://unpkg.com/deepai/dist/deepai.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@tensorflow-models/universal-sentence-encoder"></script>
+  <script src="https://cdn.jsdelivr.net/npm/jurassic"></script>
+  <script src="https://cdn.jsdelivr.net/npm/gpt-2-simple"></script>
+  <script src="https://cdn.jsdelivr.net/npm/talktotransformer"></script>
+  <script>
+    const deepaiApiKey = '9b3ba361-5ed2-466b-a831-5f9a722bc612';
+    const apiKey = 'AIzaSyAwydGicPoEr05z1a1b6W06V2Wzl-_NVxo';
+    const searchEngineId = '718cd7b701a714611';
+    let gpt2Session;
 
-	<div id="chat-container">
-		<div id="chat-output"></div>
-		<form id="chat-form">
-			<input type="text" id="user-input" placeholder="Type your message...">
-			<button type="submit">Send</button>
-		</form>
-	</div>
+    const searchInput = document.getElementById('search-input');
+    const searchResults = document.getElementById('search-results');
+    const chatOutput = document.getElementById('chat-output');
+    const userInput = document.getElementById('user-input');
 
-	<script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@3.8.0"></script>
-	<script src="https://cdn.jsdelivr.net/npm/@tensorflow-models/universal-sentence-encoder@4.0.0"></script>
-	<script src="https://cdn.jsdelivr.net/npm/deepai/dist/deepai.min.js"></script>
-	<script src="https://cdn.jsdelivr.net/npm/jurassic/dist/jurassic.min.js"></script>
-	<script src="https://cdn.jsdelivr.net/npm/gpt-2-simple/dist/gpt-2-simple.min.js"></script>
-	<script src="https://cdn.jsdelivr.net/npm/talktotransformer/dist/talktotransformer.min.js"></script>
-	<script>
-	const deepai = require('deepai');
-const use = require('@tensorflow-models/universal-sentence-encoder');
-const jurassic = require('jurassic');
-const gpt2 = require('gpt-2-simple');
-const talktotransformer = require('talktotransformer');
+    (async function() {
+        gpt2Session = await gpt2.startGPT2();
+    })();
 
-const deepaiApiKey = '9b3ba361-5ed2-466b-a831-5f9a722bc612';
-const apiKey = 'AIzaSyAwydGicPoEr05z1a1b6W06V2Wzl-_NVxo';
-const searchEngineId = ''718cd7b701a714611'';
-let gpt2Session;
+    const jurassicModel = new jurassic.Engine();
 
-const searchInput = document.getElementById('search-input');
-const searchResults = document.getElementById('search-results');
-const chatOutput = document.getElementById('chat-output');
-const userInput = document.getElementById('user-input');
-
-(async function() {
-    gpt2Session = await gpt2.startGPT2();
-})();
-
-const jurassicModel = new jurassic.Engine();
-
-async function generateChatbotResponse(inputText) {
-    try {
-        const model = await use.load();
-        const embeddings = await model.embed([inputText]);
-
-        if (inputText.toLowerCase().includes("generate a story")) {
-            const plotResponse = await deepai.callStandardApi('text-generator', { prompt: embeddings.arraySync(), model: 'text-plot-1' }, deepaiApiKey);
-            const plot = plotResponse.output;
-            const jurassicResponse = jurassicModel.run("console.log('" + plot + "')");
-            const generatedText = await generateTextWithGPT2(jurassicResponse);
-            monitorAPIUsage('GPT-2');
-            chatOutput.innerHTML += `<p>${generatedText}</p>`;
-        } else {
-            const generatedText = await generateTextWithAPIs(embeddings.arraySync(), inputText);
-            monitorAPIUsage('DeepAI');
-            chatOutput.innerHTML += `<p>${generatedText}</p>`;
-        }
-    } catch (err) {
-        console.error(err);
-        monitorAPIFailure('Unknown');
-        chatOutput.innerHTML += '<p>There was an error generating the chatbot response. Please try again later.</p>';
-    }
-}
-
-async function generateTextWithAPIs(embeddings, inputText) {
-    const responses = await Promise.allSettled([
-        deepai.callStandardApi('text-generator', { prompt: embeddings }, deepaiApiKey),
-        fetch(`https://api.deepai.org/api/text-generator?model=text-1&prompt=${inputText}`, {
-            headers: {
-                'api-key': deepaiApiKey
-            }
-        }),
-        new Promise((resolve, reject) => {
-            const xhr = new XMLHttpRequest();
-            xhr.onreadystatechange = () => {
-                if (xhr.readyState === 4) {
-                    if (xhr.status === 200) {
-                        resolve(JSON.parse(xhr.responseText));
-                    } else {
-                        reject(xhr.statusText);
-                    }
-                }
-            };
-            xhr.open('POST', 'https://api.deepai.org/api/text-generator');
-            xhr.setRequestHeader('api-key', deepaiApiKey);
-            xhr.setRequestHeader('Content-Type', 'application/x-www-form-urlencoded');
-            xhr.send(`model=text-1&prompt=${inputText}`);
-        })
-    ]);
-
-    const successfulResponses = responses.filter(response => response.status === 'fulfilled' && response.value.output);
-
-    if (successfulResponses.length === 0) {
-        throw new Error('No API response');
-    }
-
-    const generatedText = successfulResponses[0].value.output;
-    return generatedText;
-}
-
-async function generateTextWithGPT2(prompt) {
-    let generatedText;
-    for (let i = 0; i < 3; i++) {
+    async function generateChatbotResponse(inputText) {
         try {
-            generatedText = await gpt2.generate(gpt2Session, {
-                prefix: prompt,
-                length: 1000,
-                temperature: 0.7,
-                top_p: 1,
-                repetition_penalty: 1,
-                include_prefix: false
-            });
-            break;
+            const model = await use.load();
+            const embeddings = await model.embed([inputText]);
+
+            if (inputText.toLowerCase().includes("generate a story")) {
+                const plotResponse = await deepai.callStandardApi('text-generator', { prompt: embeddings.arraySync(), model: 'text-plot-1' }, deepaiApiKey);
+                const plot = plotResponse.output;
+                const jurassicResponse = jurassicModel.run("console.log('" + plot + "')");
+                const generatedText = await generateTextWithGPT2(jurassicResponse);
+                monitorAPIUsage('GPT-2');
+                chatOutput.innerHTML += `<p>${generatedText}</p>`;
+            } else {
+                const generatedText = await generateTextWithAPIs(embeddings.arraySync(), inputText);
+                monitorAPIUsage('DeepAI');
+                chatOutput.innerHTML += `<p>${generatedText}</p>`;
+            }
         } catch (err) {
             console.error(err);
-            continue;
+            monitorAPIFailure('Unknown');
+            chatOutput.innerHTML += '<p>There was an error generating the chatbot response. Please try again later.</p>';
         }
     }
-    if (!generatedText) {
-        throw new Error('Unable to generate text with GPT-2');
+
+    async function generateTextWithAPIs(embeddings, inputText) {
+        const responses = await Promise.allSettled([
+            deepai.callStandardApi('text-generator', { prompt: embeddings }, deepaiApiKey),
+            fetch(`https://api.deepai.org/api/text-generator?model=text-1&prompt=${inputText}`, {
+                headers: {
+                    'api-key': deepaiApiKey
+                }
+            }),
+            new Promise((resolve, reject) => {
+                const xhr = new XMLHttpRequest();
+                xhr.onreadystatechange = () => {
+                    if (xhr.readyState === 4) {
+                        if (xhr.status === 200) {
+                            resolve(JSON.parse(xhr.responseText));
+                        } else {
+                            reject(xhr.statusText);
+                        }
+                    }
+                };
+                xhr.open('POST', 'https://api.deepai.org/api/text-generator');
+                xhr.setRequestHeader('api-key', deepaiApiKey);
+                xhr.setRequestHeader('Content-Type', 'application/x-www-form-urlencoded');
+                xhr.send(`model=text-1&prompt=${inputText}`);
+            })
+        ]);
+
+        const successfulResponses = responses.filter(response => response.status === 'fulfilled' && response.value.output);
+
+        if (successfulResponses.length === 0) {
+            throw new Error('No API response');
+        }
+
+        const generatedText = successfulResponses[0].value.output;
+        return generatedText;
     }
-    return generatedText;
-}
 
-function monitorAPIUsage(apiName) {
-    console.log(`API usage: ${apiName}`);
-}
+    async function generateTextWithGPT2(prompt) {
+        let generatedText;
+        for (let i = 0; i < 3; i++) {
+            try {
+                generatedText = await gpt2.generate(gpt2Session, {
+                    prefix: prompt,
+                    length: 1000,
+                    temperature: 0.7,
+                    top_p: 1,
+                    repetition_penalty: 1,
+                    include_prefix: false
+                });
+                break;
+            } catch (err) {
+                console.log(`GPT-2 error: ${err.message}`);
+            }
+        }
+        return generatedText;
+    }
 
-function monitorAPIFailure(apiName) {
-    console.log(`API failure: ${apiName}`);
-}
+    function monitorAPIUsage(apiName) {
+        console.log(`API usage: ${apiName}`);
+    }
 
-document.getElementById('chat-form').addEventListener('submit', async (event) => {
-    event.preventDefault();
+    function monitorAPIFailure(apiName) {
+        console.error(`API failure: ${apiName}`);
+    }
 
-    const inputText = userInput.value;
-    chatOutput.innerHTML += `<p>You: ${inputText}</p>`;
-    await generateChatbotResponse(inputText);
-    userInput.value = '';
-});
+    searchInput.addEventListener('keydown', async (event) => {
+        if (event.keyCode === 13) {
+            event.preventDefault();
+            searchResults.innerHTML = '';
+            const searchText = searchInput.value;
+            const searchResponse = await fetch(`https://www.googleapis.com/customsearch/v1?key=${apiKey}&cx=${searchEngineId}&q=${searchText}`);
+            const searchResult = await searchResponse.json();
 
-searchInput.addEventListener('keydown', async (event) => {
-    if (event.keyCode === 13) {
+            searchResult.items.forEach(item => {
+                const result = document.createElement('div');
+                result.innerHTML = `<a href="${item.link}" target="_blank">${item.title}</a>
+                                     <p>${item.snippet}</p>`;
+                searchResults.appendChild(result);
+            });
+
+            searchInput.value = '';
+        }
+    });
+
+    document.getElementById('chat-form').addEventListener('submit', async (event) => {
         event.preventDefault();
-        searchResults.innerHTML = '';
-        const searchText = searchInput.value;
-        const searchResponse = await fetch(`https://www.googleapis.com/customsearch/v1?key=${apiKey}&cx=${searchEngineId}&q=${searchText}`);
-        const searchResult = awaitsearchResponse.json();
-
-        searchResult.items.forEach(item => {
-            const result = document.createElement('div');
-            result.innerHTML = `<a href="${item.link}" target="_blank">${item.title}</a>
-                                 <p>${item.snippet}</p>`;
-            searchResults.appendChild(result);
-        });
-
-        searchInput.value = '';
-    }
-});
-	</script>
+        const inputText = userInput.value.trim();
+        if (inputText !== '') {
+            chatOutput.innerHTML += `<p><strong>You:</strong> ${inputText}</p>`;
+            await generateChatbotResponse(inputText);
+            chatOutput.scrollTop = chatOutput.scrollHeight;
+        }
+        userInput.value = '';
+    });
+  </script>
 </body>
 </html>
