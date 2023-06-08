@@ -111,144 +111,118 @@
   <input type="text" id="search-input" name="search-input">
   <div id="search-results"></div>
   
-  <script src="https://unpkg.com/deepai/dist/deepai.min.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/@tensorflow-models/universal-sentence-encoder"></script>
-  <script src="https://cdn.jsdelivr.net/npm/jurassic"></script>
-  <script src="https://cdn.jsdelivr.net/npm/gpt-2-simple"></script>
   <script src="https://cdn.jsdelivr.net/npm/talktotransformer"></script>
+  <script src="https://cdn.jsdelivr.net/npm/jurassic"></script>
   <script>
-    const deepaiApiKey = '9b3ba361-5ed2-466b-a831-5f9a722bc612';
     const apiKey = 'AIzaSyAwydGicPoEr05z1a1b6W06V2Wzl-_NVxo';
     const searchEngineId = '718cd7b701a714611';
-    let gpt2Session;
-
-    const searchInput = document.getElementById('search-input');
-    const searchResults = document.getElementById('search-results');
-    const chatOutput = document.getElementById('chat-output');
-    const userInput = document.getElementById('user-input');
-
-    (async function() {
-        gpt2Session = await gpt2.startGPT2();
-    })();
-
-    const jurassicModel = new jurassic.Engine();
-
-    async function generateChatbotResponse(inputText) {
-        try {
-            const model = await use.load();
-            const embeddings = await model.embed([inputText]);
-
-            if (inputText.toLowerCase().includes("generate a story")) {
-                const plotResponse = await deepai.callStandardApi('text-generator', { prompt: embeddings.arraySync(), model: 'text-plot-1' }, deepaiApiKey);
-                const plot = plotResponse.output;
-                const jurassicResponse = jurassicModel.run("console.log('" + plot + "')");
-                const generatedText = await generateTextWithGPT2(jurassicResponse);
-                monitorAPIUsage('GPT-2');
-                chatOutput.innerHTML += `<p>${generatedText}</p>`;
-            } else {
-                const generatedText = await generateTextWithAPIs(embeddings.arraySync(), inputText);
-                monitorAPIUsage('DeepAI');
-                chatOutput.innerHTML += `<p>${generatedText}</p>`;
-            }
-        } catch (err) {
-            console.error(err);
-            monitorAPIFailure('Unknown');
-            chatOutput.innerHTML += '<p>There was an error generating the chatbot response. Please try again later.</p>';
-        }
+    
+    // Helper function to log API usage and failures
+    function logApiUsage(apiName) {
+      console.log(`${apiName} API called`);
     }
-
-    async function generateTextWithAPIs(embeddings, inputText) {
-        const responses = await Promise.allSettled([
-            deepai.callStandardApi('text-generator', { prompt: embeddings }, deepaiApiKey),
-            fetch(`https://api.deepai.org/api/text-generator?model=text-1&prompt=${inputText}`, {
-                headers: {
-                    'api-key': deepaiApiKey
-                }
-            }),
-            new Promise((resolve, reject) => {
-                const xhr = new XMLHttpRequest();
-                xhr.onreadystatechange = () => {
-                    if (xhr.readyState === 4) {
-                        if (xhr.status === 200) {
-                            resolve(JSON.parse(xhr.responseText));
-                        } else {
-                            reject(xhr.statusText);
-                        }
-                    }
-                };
-                xhr.open('POST', 'https://api.deepai.org/api/text-generator');
-                xhr.setRequestHeader('api-key', deepaiApiKey);
-                xhr.setRequestHeader('Content-Type', 'application/x-www-form-urlencoded');
-                xhr.send(`model=text-1&prompt=${inputText}`);
-            })
-        ]);
-
-        const successfulResponses = responses.filter(response => response.status === 'fulfilled' && response.value.output);
-
-        if (successfulResponses.length === 0) {
-            throw new Error('No API response');
-        }
-
-        const generatedText = successfulResponses[0].value.output;
-        return generatedText;
+    
+    // Get a response from Talk to Transformer API
+    async function getChatbotResponse(input) {
+      logApiUsage('Talk to Transformer');
+      const response = await talktotransformer({
+        apiKey: 'free',
+        input: input,
+        model: 'curie',
+        length: 200
+      });
+      return response;
     }
-
-    async function generateTextWithGPT2(prompt) {
-        let generatedText;
-        for (let i = 0; i < 3; i++) {
-            try {
-                generatedText = await gpt2.generate(gpt2Session, {
-                    prefix: prompt,
-                    length: 1000,
-                    temperature: 0.7,
-                    top_p: 1,
-                    repetition_penalty: 1,
-                    include_prefix: false
-                });
-                break;
-            } catch (err) {
-                console.log(`GPT-2 error: ${err.message}`);
-            }
-        }
-        return generatedText;
+    
+    // Get a response from Jurassic API
+    async function getJurassicResponse(input) {
+      logApiUsage('Jurassic');
+      const response = await fetch('https://jurassic-api.herokuapp.com/generate', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ text: input })
+      });
+      const data = await response.json();
+      return data.generated_text;
     }
-
-    function monitorAPIUsage(apiName) {
-        console.log(`API usage: ${apiName}`);
+    
+    // Get search results from Google Custom Search API
+    async function getSearchResults(query) {
+      logApiUsage('Google Custom Search');
+      const url = `https://www.googleapis.com/customsearch/v1?key=${apiKey}&cx=${searchEngineId}&q=${query}`;
+      const response = await fetch(url);
+      const data = await response.json();
+      return data.items;
     }
-
-    function monitorAPIFailure(apiName) {
-        console.error(`API failure: ${apiName}`);
-    }
-
-    searchInput.addEventListener('keydown', async (event) => {
-        if (event.keyCode === 13) {
-            event.preventDefault();
-            searchResults.innerHTML = '';
-            const searchText = searchInput.value;
-            const searchResponse = await fetch(`https://www.googleapis.com/customsearch/v1?key=${apiKey}&cx=${searchEngineId}&q=${searchText}`);
-            const searchResult = await searchResponse.json();
-
-            searchResult.items.forEach(item => {
-                const result = document.createElement('div');
-                result.innerHTML = `<a href="${item.link}" target="_blank">${item.title}</a>
-                                     <p>${item.snippet}</p>`;
-                searchResults.appendChild(result);
-            });
-
-            searchInput.value = '';
-        }
+    
+    // Handle chat form submission
+    document.querySelector('#chat-form').addEventListener('submit', async (event) => {
+      event.preventDefault();
+      const userInput = document.querySelector('#user-input').value;
+      let chatbotResponse;
+      
+      if (userInput.includes('generate a story')) {
+        chatbotResponse = await getGpt2Response();
+      } else {
+        chatbotResponse = await getChatbotResponse(userInput);
+      }
+      
+      const jurassicResponse = await getJurassicResponse(chatbotResponse);
+      const chatOutput = document.querySelector('#chat-output');
+      const userMessage = document.createElement('p');
+      userMessage.textContent = `You: ${userInput}`;
+      const chatbotMessage = document.createElement('p');
+      chatbotMessage.textContent = `Chatbot: ${chatbotResponse}`;
+      const jurassicMessage = document.createElement('p');
+      jurassicMessage.textContent = `Jurassic: ${jurassicResponse}`;
+      chatOutput.appendChild(userMessage);
+      chatOutput.appendChild(chatbotMessage);
+      chatOutput.appendChild(jurassicMessage);
+      document.querySelector('#user-input').value = '';
     });
-
-    document.getElementById('chat-form').addEventListener('submit', async (event) => {
-        event.preventDefault();
-        const inputText = userInput.value.trim();
-        if (inputText !== '') {
-            chatOutput.innerHTML += `<p><strong>You:</strong> ${inputText}</p>`;
-            await generateChatbotResponse(inputText);
-            chatOutput.scrollTop = chatOutput.scrollHeight;
-        }
-        userInput.value = '';
+    
+    // Get a response from GPT-2
+    async function getGpt2Response() {
+      logApiUsage('GPT-2');
+      const response = await fetch('https://api.openai.com/v1/engines/davinci/story', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer [YOUR_OPENAI_API_KEY]'
+        },
+        body: JSON.stringify({
+          prompt: 'Once upon a time, in a far-off land, there was a',
+          max_tokens: 1024,
+          temperature: 0.7,
+          stop: 'THE END'
+        })
+      });
+      const data = await response.json();
+      return data.choices[0].text;
+    }
+    
+    // Handle search input
+    document.querySelector('#search-input').addEventListener('input', async (event) => {
+      const searchQuery = event.target.value;
+      const searchResults = document.querySelector('#search-results');
+      searchResults.innerHTML = '';
+      
+      if (searchQuery.length > 2) {
+        const results = await getSearchResults(searchQuery);
+        results.forEach(result => {
+          const div = document.createElement('div');
+          const link = document.createElement('a');
+          link.href = result.link;
+          link.textContent = result.title;
+          div.appendChild(link);
+          const snippet = document.createElement('p');
+          snippet.textContent = result.snippet;
+          div.appendChild(snippet);
+          searchResults.appendChild(div);
+        });
+      }
     });
   </script>
 </body>
