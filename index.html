@@ -1,196 +1,131 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <meta charset="UTF-8">
-  <title>Isogle - Search and AI</title>
-  <style>
-    body {
-      font-family: Arial, sans-serif;
-      margin: 0;
-      padding: 0;
-      background-color: #f5f5f5;
-    }
-    h1 {
-      font-size: 2rem;
-      font-weight: bold;
-      margin: 0;
-      padding: 1rem;
-      text-align: center;
-      background-color: #007bff;
-      color: #fff;
-    }
-    .container {
-      display: flex;
-      flex-direction: column;
-      justify-content: center;
-      align-items: center;
-      height: 100vh;
-    }
-    form {
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      margin: 1rem;
-    }
-    input[type="text"] {
-      font-size: 1rem;
-      padding: 0.5rem;
-      border-radius: 0.25rem;
-      border: none;
-      box-shadow: 0 0 0.25rem rgba(0, 0, 0, 0.2);
-    }
-    button[type="submit"] {
-      font-size: 1rem;
-      font-weight: bold;
-      margin-left: 0.5rem;
-      padding: 0.5rem 1rem;
-      border-radius: 0.25rem;
-      border: none;
-      background-color: #dc3545;
-      color: #fff;
-      box-shadow: 0 0 0.25rem rgba(0, 0, 0, 0.2);
-      cursor: pointer;
-    }
-    #chat-output {
-      display: flex;
-      flex-direction: column;
-      justify-content: flex-start;
-      align-items: flex-start;
-      margin: 1rem;
-      padding: 1rem;
-      width: 100%;
-      max-height: 50vh;
-      overflow-y: auto;
-      box-shadow: 0 0 0.25rem rgba(0, 0, 0, 0.2);
-      background-color: #fff;
-    }
-    #chat-output p {
-      margin: 0;
-      padding: 0.25rem 0;
-    }
-    #search-input {
-      font-size: 1rem;
-      padding: 0.5rem;
-      border-radius: 0.25rem;
-      border: none;
-      box-shadow: 0 0 0.25rem rgba(0, 0, 0, 0.2);
-      margin: 1rem;
-    }
-    #search-results {
-      margin: 1rem;
-      padding: 1rem;
-      width: 100%;
-      max-height: 50vh;
-      overflow-y: auto;
-      box-shadow: 0 0 0.25rem rgba(0, 0, 0, 0.2);
-      background-color: #fff;
-    }
-    #search-results div {
-      margin-bottom: 1rem;
-    }
-    #search-results a {
-      font-weight: bold;
-      color: #007bff;
-      text-decoration: none;
-    }
-    #search-results a:hover {
-      text-decoration: underline;
-    }
-  </style>
-</head>
-<body>
-  <h1>Isogle</h1>
-  <form id="chat-form">
-    <label for="user-input">User Input:</label>
-    <input type="text" id="user-input" name="user-input">
-    <button type="submit">Send</button>
-  </form>
-  <h2>Chat Output:</h2>
-  <div id="chat-output"></div>
-  <h2>Search:</h2>
-  <input type="text" id="search-input" name="search-input">
-  <div id="search-results"></div>
-  
-  <script src="https://cdn.jsdelivr.net/npm/gpt-2"></script>
-  <script src="https://www.google.com/jsapi"></script>
-  <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+  <meta charset="utf-8">
+  <title>Isogle</title>
+  <script src="https://apis.google.com/js/api.js"></script>
   <script>
-    const apiKey = 'AIzaSyAwydGicPoEr05z1a1b6W06V2Wzl-_NVxo';
-    const searchEngineId = '718cd7b701a714611';
-    
-    // Helper function to log API usage and failures
-    function logApiUsage(apiName) {
-      console.log(`${apiName} API called`);
-    }
-    
-    // Get a response from GPT-2 model
-    async function getChatbotResponse(input) {
-      logApiUsage('GPT-2');
-      const model = await gpt2.load();
-     const response = await model.generate(input, { maxLength: 200 });
-      return response;
-    }
-    
-    // Search for results using Google Search API
-    async function search(query) {
-      logApiUsage('Google Search');
-      const url = `https://www.googleapis.com/customsearch/v1?key=${apiKey}&cx=${searchEngineId}&q=${encodeURIComponent(query)}`;
-      const response = await fetch(url);
-      const data = await response.json();
-      return data.items;
-    }
-    
-    // Update chat output with user input and chatbot response
-    function updateChatOutput(userInput, chatbotResponse) {
-      const chatOutput = document.getElementById('chat-output');
-      const userBubble = document.createElement('p');
-      userBubble.innerText = `User: ${userInput}`;
-      const chatbotBubble = document.createElement('p');
-      chatbotBubble.innerText = `Chatbot: ${chatbotResponse}`;
-      chatOutput.appendChild(userBubble);
-      chatOutput.appendChild(chatbotBubble);
-      chatOutput.scrollTop = chatOutput.scrollHeight;
-    }
-    
-    // Update search results with search query and results
-    function updateSearchResults(query, results) {
-      const searchResults = document.getElementById('search-results');
-      searchResults.innerHTML = `
-        <h3>Results for "${query}":</h3>
-      `;
-      results.forEach(result => {
-        const resultDiv = document.createElement('div');
-        const resultLink = document.createElement('a');
-        resultLink.href = result.link;
-        resultLink.target = '_blank';
-        resultLink.innerText = result.title;
-        const resultSnippet = document.createElement('p');
-        resultSnippet.innerText = result.snippet;
-        resultDiv.appendChild(resultLink);
-        resultDiv.appendChild(resultSnippet);
-        searchResults.appendChild(resultDiv);
+    function init() {
+      gapi.client.init({
+        'apiKey': 'AIzaSyAwydGicPoEr05z1a1b6W06V2Wzl-_NVxo',
+        'discoveryDocs': ['https://www.googleapis.com/discovery/v1/apis/customsearch/v1/rest', 'https://www.googleapis.com/discovery/v1/apis/youtube/v3/rest'],
+        'scope': 'https://www.googleapis.com/auth/youtube.force-ssl https://www.googleapis.com/auth/userinfo.email',
+      }).then(function() {
+        console.log('API client initialized');
+      }, function(error) {
+        console.log('Error initializing API client:', error);
       });
     }
-    
-    // Handle form submit
-    $('#chat-form').submit(async function(event) {
-      event.preventDefault();
-      const userInput = $('#user-input').val();
-      $('#user-input').val('');
-      const chatbotResponse = await getChatbotResponse(userInput);
-      updateChatOutput(userInput, chatbotResponse);
-    });
-    
-    // Handle search input change
-    $('#search-input').on('input', async function() {
-      const query = $('#search-input').val();
-      if (query.length > 0) {
-        const results = await search(query);
-        updateSearchResults(query, results);
-      } else {
-        $('#search-results').html('');
+
+    function searchAll() {
+      var query = document.getElementById('query').value.trim();
+      searchGoogle(query);
+      searchVideos(query);
+    }
+
+    function searchGoogle(query) {
+      gapi.client.customsearch.cse.list({
+        q: query,
+        cx: '718cd7b701a714611',
+        num: 10
+      }).then(function(response) {
+        var searchResultsHTML = '';
+        var items = response.result.items;
+        if (items) {
+          items.forEach(function(item) {
+            searchResultsHTML += '<div>';
+            if (item.pagemap && item.pagemap.cse_image && item.pagemap.cse_image.length > 0) {
+              searchResultsHTML += '<img src="' + item.pagemap.cse_image[0].src + '">';
+            }
+            searchResultsHTML += '<h4><a href="' + item.link + '">' + item.title + '</a></h4>';
+            searchResultsHTML += '<p>' + item.snippet + '</p>';
+            searchResultsHTML += '</div>';
+          });
+        } else {
+          searchResultsHTML = '<p>No results found</p>';
+        }
+        searchResults.innerHTML = searchResultsHTML;
+      });
+    }
+
+    function searchVideos(query) {
+      gapi.client.youtube.search.list({
+        q: query,
+        part: 'snippet',
+        maxResults: 10
+      }).then(function(response) {
+        var searchResultsHTML = '';
+        var items = response.result.items;
+        if (items) {
+          items.forEach(function(item) {
+            searchResultsHTML += '<div>';
+            searchResultsHTML += '<a href="https://www.youtube.com/watch?v=' + item.id.videoId + '"><img src="' + item.snippet.thumbnails.default.url + '"></a>';
+            searchResultsHTML += '<h4><a href="https://www.youtube.com/watch?v=' + item.id.videoId + '">' + item.snippet.title + '</a></h4>';
+            searchResultsHTML += '<p>' + item.snippet.description + '</p>';
+            searchResultsHTML += '<p>Duration: ' + formatDuration(item.contentDetails.duration) + '</p>';
+            searchResultsHTML += '</div>';
+          });
+        } else {
+          searchResultsHTML = '<p>No results found</p>';
+        }
+        searchResults.innerHTML += searchResultsHTML;
+      });
+    }
+
+    function formatDuration(duration) {
+      var match = duration.match(/PT(\d+H)?(\d+M)?(\d+S)?/);
+      var hours = (parseInt(match[1]) || 0);
+      var minutes = (parseInt(match[2]) || 0);
+      var seconds = (parseInt(match[3]) || 0);
+      var durationString = '';
+      if (hours > 0) {
+        durationString += hours + ':';
       }
-    });
+      if (minutes < 10) {
+        durationString += '0';
+      }
+      durationString += minutes + ':';
+      if (seconds < 10) {
+        durationString += '0';
+      }
+      durationString += seconds;
+      return durationString;
+    }
+
+    function onYouTubeIframeAPIReady() {
+      var player = new YT.Player('player', {
+        height: '360',
+        width: '640',
+        videoId: 'M7lc1UVf-VE',
+        events: {
+          'onReady': onPlayerReady,
+          'onStateChange': onPlayerStateChange
+        }
+      });
+    }
+
+    function onPlayerReady(event) {
+      event.target.playVideo();
+    }
+
+    function onPlayerStateChange(event) {
+      if (event.data == YT.PlayerState.PLAYING && !done) {
+        setTimeout(stopVideo, 6000);
+        done = true;
+      }
+    }
+
+    function stopVideo() {
+      player.stopVideo();
+    }
   </script>
+</head>
+<body>
+  <div>
+    <input type="text" id="query" placeholder="Enter search query">
+   <button onclick="searchAll()">Search</button>
+  </div>
+<p>Search Results:</p>
+<div id="searchResults"></div>
 </body>
 </html>
