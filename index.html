@@ -2,7 +2,104 @@
 <html>
 <head>
   <meta charset="utf-8">
-  <title>Isogle</title>
+  <title>Google API Search Example</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+    }
+
+    h1 {
+      text-align: center;
+    }
+
+    #searchForm {
+      margin: 0 auto;
+      max-width: 600px;
+      text-align: center;
+    }
+
+    #searchForm input[type=text] {
+      width: 70%;
+      padding: 12px 20px;
+      margin: 8px 0;
+      box-sizing: border-box;
+      border: 2px solid #ccc;
+      border-radius: 4px;
+    }
+
+    #searchForm button {
+      width: 20%;
+      background-color: #4CAF50;
+      color: white;
+      padding: 12px 20px;
+      margin: 8px 0;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+    }
+
+    #searchForm button:hover {
+      background-color: #45a049;
+    }
+
+    #searchResults {
+      max-width: 800px;
+      margin: 0 auto;
+    }
+
+    .searchResultBox {
+      display: flex;
+      align-items: center;
+      margin-bottom: 20px;
+      border: 1px solid #ddd;
+      border-radius: 4px;
+      padding: 10px;
+    }
+
+    .searchResultBox img {
+      max-width: 150px;
+      margin-right: 10px;
+    }
+
+    .searchResultBox h4 {
+      margin: 0;
+      font-size: 18px;
+    }
+
+    .searchResultBox p {
+      margin: 0;
+      font-size: 14px;
+    }
+
+    .videoResultBox {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      margin-bottom: 20px;
+      border: 1px solid #ddd;
+      border-radius: 4px;
+      padding: 10px;
+    }
+
+    .videoResultBox img {
+      max-width: 300px;
+      margin-bottom: 10px;
+    }
+
+    .videoResultBox h4 {
+      margin: 0;
+      font-size: 18px;
+    }
+
+    .videoResultBox p {
+      margin: 0;
+      font-size: 14px;
+    }
+
+    .videoResultBox span {
+      font-size: 12px;
+    }
+  </style>
   <script src="https://apis.google.com/js/api.js"></script>
   <script>
     function init() {
@@ -19,8 +116,9 @@
 
     function searchAll() {
       var query = document.getElementById('query').value.trim();
+      var videoQuery = document.getElementById('videoQuery').value.trim();
       searchGoogle(query);
-      searchVideos(query);
+      searchVideos(videoQuery);
     }
 
     function searchGoogle(query) {
@@ -33,13 +131,14 @@
         var items = response.result.items;
         if (items) {
           items.forEach(function(item) {
-            searchResultsHTML += '<div>';
+            searchResultsHTML += '<div class="searchResultBox">';
             if (item.pagemap && item.pagemap.cse_image && item.pagemap.cse_image.length > 0) {
               searchResultsHTML += '<img src="' + item.pagemap.cse_image[0].src + '">';
             }
+            searchResultsHTML += '<div>';
             searchResultsHTML += '<h4><a href="' + item.link + '">' + item.title + '</a></h4>';
             searchResultsHTML += '<p>' + item.snippet + '</p>';
-            searchResultsHTML += '</div>';
+            searchResultsHTML += '</div></div>';
           });
         } else {
           searchResultsHTML = '<p>No results found</p>';
@@ -58,11 +157,11 @@
         var items = response.result.items;
         if (items) {
           items.forEach(function(item) {
-            searchResultsHTML += '<div>';
-            searchResultsHTML += '<a href="https://www.youtube.com/watch?v=' + item.id.videoId + '"><img src="' + item.snippet.thumbnails.default.url + '"></a>';
+            searchResultsHTML +='<div class="videoResultBox">';
+            searchResultsHTML += '<img src="' + item.snippet.thumbnails.medium.url + '">';
             searchResultsHTML += '<h4><a href="https://www.youtube.com/watch?v=' + item.id.videoId + '">' + item.snippet.title + '</a></h4>';
-            searchResultsHTML += '<p>' + item.snippet.description + '</p>';
-            searchResultsHTML += '<p>Duration: ' + formatDuration(item.contentDetails.duration) + '</p>';
+            searchResultsHTML += '<p>' + item.snippet.channelTitle + '</p>';
+            searchResultsHTML += '<span>Views: ' + item.statistics.viewCount + '</span>';
             searchResultsHTML += '</div>';
           });
         } else {
@@ -71,61 +170,16 @@
         searchResults.innerHTML += searchResultsHTML;
       });
     }
-
-    function formatDuration(duration) {
-      var match = duration.match(/PT(\d+H)?(\d+M)?(\d+S)?/);
-      var hours = (parseInt(match[1]) || 0);
-      var minutes = (parseInt(match[2]) || 0);
-      var seconds = (parseInt(match[3]) || 0);
-      var durationString = '';
-      if (hours > 0) {
-        durationString += hours + ':';
-      }
-      if (minutes < 10) {
-        durationString += '0';
-      }
-      durationString += minutes + ':';
-      if (seconds < 10) {
-        durationString += '0';
-      }
-      durationString += seconds;
-      return durationString;
-    }
-
-    function onYouTubeIframeAPIReady() {
-      var player = new YT.Player('player', {
-        height: '360',
-        width: '640',
-        videoId: 'M7lc1UVf-VE',
-        events: {
-          'onReady': onPlayerReady,
-          'onStateChange': onPlayerStateChange
-        }
-      });
-    }
-
-    function onPlayerReady(event) {
-      event.target.playVideo();
-    }
-
-    function onPlayerStateChange(event) {
-      if (event.data == YT.PlayerState.PLAYING && !done) {
-        setTimeout(stopVideo, 6000);
-        done = true;
-      }
-    }
-
-    function stopVideo() {
-      player.stopVideo();
-    }
   </script>
 </head>
-<body>
-  <div>
-    <input type="text" id="query" placeholder="Enter search query">
-   <button onclick="searchAll()">Search</button>
+<body onload="init()">
+  <h1>Google API Search Example</h1>
+  <div id="searchForm">
+    <input type="text" id="query" placeholder="Search...">
+    <input type="text" id="videoQuery" placeholder="Search Videos...">
+    <button onclick="searchAll()">Search</button>
   </div>
-<p>Search Results:</p>
-<div id="searchResults"></div>
+  <div id="searchResults"></div>
 </body>
 </html>
+
