@@ -1,185 +1,213 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <meta charset="utf-8">
-  <title>Google API Search Example</title>
+  <title>Isogle</title>
+  <script src="https://apis.google.com/js/api.js"></script>
   <style>
-    body {
-      font-family: Arial, sans-serif;
-    }
-
-    h1 {
-      text-align: center;
-    }
-
-    #searchForm {
-      margin: 0 auto;
-      max-width: 600px;
-      text-align: center;
-    }
-
-    #searchForm input[type=text] {
-      width: 70%;
-      padding: 12px 20px;
-      margin: 8px 0;
-      box-sizing: border-box;
-      border: 2px solid #ccc;
-      border-radius: 4px;
-    }
-
-    #searchForm button {
-      width: 20%;
-      background-color: #4CAF50;
-      color: white;
-      padding: 12px 20px;
-      margin: 8px 0;
-      border: none;
-      border-radius: 4px;
-      cursor: pointer;
-    }
-
-    #searchForm button:hover {
-      background-color: #45a049;
-    }
-
-    #searchResults {
-      max-width: 800px;
-      margin: 0 auto;
-    }
-
-    .searchResultBox {
-      display: flex;
-      align-items: center;
+    .searchBox {
       margin-bottom: 20px;
-      border: 1px solid #ddd;
-      border-radius: 4px;
-      padding: 10px;
     }
-
-    .searchResultBox img {
-      max-width: 150px;
-      margin-right: 10px;
-    }
-
-    .searchResultBox h4 {
-      margin: 0;
-      font-size: 18px;
-    }
-
-    .searchResultBox p {
-      margin: 0;
-      font-size: 14px;
-    }
-
-    .videoResultBox {
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      margin-bottom: 20px;
-      border: 1px solid #ddd;
-      border-radius: 4px;
-      padding: 10px;
-    }
-
-    .videoResultBox img {
-      max-width: 300px;
+    .searchBox label {
+      display: block;
       margin-bottom: 10px;
     }
-
-    .videoResultBox h4 {
-      margin: 0;
-      font-size: 18px;
+    .searchBox input {
+      display: block;
+      width: 100%;
+      margin-bottom: 10px;
     }
-
-    .videoResultBox p {
-      margin: 0;
-      font-size: 14px;
+    .searchBox button {
+      display: block;
+      margin: 10px auto;
     }
-
-    .videoResultBox span {
-      font-size: 12px;
+    .searchResults {
+      display: flex;
+      flex-wrap: wrap;
+    }
+    .searchResults .resultBox {
+      margin: 10px;
+      padding: 10px;
+      border: 1px solid #ccc;
+      width: 300px;
+    }
+    .searchResults .resultBox img {
+      max-width: 100%;
+      height: auto;
+    }
+    #player {
+      width: 640px;
+      height: 360px;
+      margin-bottom: 20px;
     }
   </style>
-  <script src="https://apis.google.com/js/api.js"></script>
+</head>
+<body>
+  <h1>Google API Search Example</h1>
+  <div class="searchBox">
+    <label>Search Google:</label>
+    <input type="text" id="googleSearchQuery" placeholder="Enter search query">
+    <button onclick="searchGoogle()">Search</button>
+  </div>
+  <div class="searchBox">
+    <label>Search YouTube Videos:</label>
+    <input type="text" id="youtubeVideoQuery" placeholder="Enter video search query">
+    <button onclick="searchYouTubeVideos()">Search</button>
+  </div>
+  <div class="searchBox">
+    <label>Search YouTube Channels:</label>
+    <input type="text" id="youtubeChannelQuery" placeholder="Enter channel search query">
+    <button onclick="searchYouTubeChannels()">Search</button>
+  </div>
+  <div id="searchResults" class="searchResults"></div>
+  <div id="player"></div>
   <script>
-    function init() {
+    // Load the Google API client library and authenticate the user
+    gapi.load('client', function() {
       gapi.client.init({
-        'apiKey': 'AIzaSyAwydGicPoEr05z1a1b6W06V2Wzl-_NVxo',
-        'discoveryDocs': ['https://www.googleapis.com/discovery/v1/apis/customsearch/v1/rest', 'https://www.googleapis.com/discovery/v1/apis/youtube/v3/rest'],
-        'scope': 'https://www.googleapis.com/auth/youtube.force-ssl https://www.googleapis.com/auth/userinfo.email',
+        apiKey: 'AIzaSyAwydGicPoEr05z1a1b6W06V2Wzl-_NVxo',
+        discoveryDocs: ['https://www.googleapis.com/discovery/v1/apis/customsearch/v1/rest', 'https://www.googleapis.com/discovery/v1/apis/youtube/v3/rest'],
       }).then(function() {
-        console.log('API client initialized');
+        console.log('Google API client initialized');
       }, function(error) {
-        console.log('Error initializing API client:', error);
+        console.error(error);
       });
-    }
-
-    function searchAll() {
-      var query = document.getElementById('query').value.trim();
-      var videoQuery = document.getElementById('videoQuery').value.trim();
-      searchGoogle(query);
-      searchVideos(videoQuery);
-    }
-
-    function searchGoogle(query) {
+    });
+    
+    // Search Google's search engine
+    function searchGoogle() {
+      var searchResults = document.getElementById('searchResults');
+      searchResults.innerHTML = ''; // Clear previous search results
+      var query = document.getElementById('googleSearchQuery').value;
+      var cx = '718cd7b701a714611';
+      var searchResultsHTML = '';
       gapi.client.customsearch.cse.list({
         q: query,
-        cx: '718cd7b701a714611',
-        num: 10
+        cx: cx,
+        num: 5
       }).then(function(response) {
-        var searchResultsHTML = '';
         var items = response.result.items;
         if (items) {
           items.forEach(function(item) {
-            searchResultsHTML += '<div class="searchResultBox">';
-            if (item.pagemap && item.pagemap.cse_image && item.pagemap.cse_image.length > 0) {
-              searchResultsHTML += '<img src="' + item.pagemap.cse_image[0].src + '">';
-            }
-            searchResultsHTML += '<div>';
+            searchResultsHTML += '<div class="resultBox">';
             searchResultsHTML += '<h4><a href="' + item.link + '">' + item.title + '</a></h4>';
             searchResultsHTML += '<p>' + item.snippet + '</p>';
-            searchResultsHTML += '</div></div>';
-          });
-        } else {
-          searchResultsHTML = '<p>No results found</p>';
-        }
-        searchResults.innerHTML = searchResultsHTML;
-      });
-    }
-
-    function searchVideos(query) {
-      gapi.client.youtube.search.list({
-        q: query,
-        part: 'snippet',
-        maxResults: 10
-      }).then(function(response) {
-        var searchResultsHTML = '';
-        var items = response.result.items;
-        if (items) {
-          items.forEach(function(item) {
-            searchResultsHTML +='<div class="videoResultBox">';
-            searchResultsHTML += '<img src="' + item.snippet.thumbnails.medium.url + '">';
-            searchResultsHTML += '<h4><a href="https://www.youtube.com/watch?v=' + item.id.videoId + '">' + item.snippet.title + '</a></h4>';
-            searchResultsHTML += '<p>' + item.snippet.channelTitle + '</p>';
-            searchResultsHTML += '<span>Views: ' + item.statistics.viewCount + '</span>';
+            if (item.pagemap && item.pagemap.cse_image) {
+              searchResultsHTML += '<img src="' + item.pagemap.cse_image[0].src + '">';
+            }
             searchResultsHTML += '</div>';
           });
         } else {
-          searchResultsHTML = '<p>No results found</p>';
+          searchResultsHTML += '<p>No results found.</p>';
         }
-        searchResults.innerHTML += searchResultsHTML;
+        searchResults.innerHTML = searchResultsHTML;
+      }, function(error) {
+        console.error(error);
       });
     }
+    
+    // Search YouTube videos
+    function searchYouTubeVideos() {
+      var searchResults = document.getElementById('searchResults');
+      searchResults.innerHTML = ''; // Clear previous search results
+      var query = document.getElementById('youtubeVideoQuery').value;
+      var searchResultsHTML = '';
+      gapi.client.youtube.search.list({
+        q: query,
+        part: 'snippet',
+        type: 'video',
+        maxResults: 5
+      }).then(function(response) {
+        var items = response.result.items;
+        if (items) {
+          items.forEach(function(item) {
+            searchResultsHTML += '<div class="resultBox">';
+            searchResultsHTML += '<h4><a href="https://www.youtube.com/watch?v=' + item.id.videoId + '">' + item.snippet.title + '</a></h4>';
+            searchResultsHTML += '<p>' +item.snippet.description + '</p>';
+            searchResultsHTML += '<img src="' + item.snippet.thumbnails.default.url + '">';
+            searchResultsHTML += '</div>';
+          });
+        } else {
+          searchResultsHTML += '<p>No results found.</p>';
+        }
+        searchResults.innerHTML = searchResultsHTML;
+      }, function(error) {
+        console.error(error);
+      });
+    }
+    
+    // Search YouTube channels
+    function searchYouTubeChannels() {
+      var searchResults = document.getElementById('searchResults');
+      searchResults.innerHTML = ''; // Clear previous search results
+      var query = document.getElementById('youtubeChannelQuery').value;
+      var searchResultsHTML = '';
+      gapi.client.youtube.search.list({
+        q: query,
+        part: 'snippet',
+        type: 'channel',
+        maxResults: 5
+      }).then(function(response) {
+        var items = response.result.items;
+        if (items) {
+          items.forEach(function(item) {
+            searchResultsHTML += '<div class="resultBox">';
+            searchResultsHTML += '<h4><a href="https://www.youtube.com/channel/' + item.id.channelId + '">' + item.snippet.title + '</a></h4>';
+            searchResultsHTML += '<p>' + item.snippet.description + '</p>';
+            searchResultsHTML += '<img src="' + item.snippet.thumbnails.default.url + '">';
+            searchResultsHTML += '</div>';
+          });
+        } else {
+          searchResultsHTML += '<p>No results found.</p>';
+        }
+        searchResults.innerHTML = searchResultsHTML;
+      }, function(error) {
+        console.error(error);
+      });
+    }
+    
+    // Load the YouTube player API asynchronously and create a YouTube player
+    var tag = document.createElement('script');
+    tag.src = 'https://www.youtube.com/player_api';
+    var firstScriptTag = document.getElementsByTagName('script')[0];
+    firstScriptTag.parentNode.insertBefore(tag, firstScriptTag);
+    var player;
+    function onYouTubePlayerAPIReady() {
+      player = new YT.Player('player', {
+        height: '360',
+        width: '640',
+        videoId: 'M7lc1UVf-VE'
+      });
+    }
+    
+    // Load the YouTube Iframe API asynchronously and create a YouTube player
+    var tag = document.createElement('script');
+    tag.src = 'https://www.youtube.com/iframe_api';
+    var firstScriptTag = document.getElementsByTagName('script')[0];
+    firstScriptTag.parentNode.insertBefore(tag, firstScriptTag);
+    var player;
+    function onYouTubeIframeAPIReady() {
+      player = new YT.Player('player', {
+        height: '360',
+        width: '640',
+        videoId: 'M7lc1UVf-VE',
+        events: {
+          'onReady': onPlayerReady,   
+          'onStateChange': onPlayerStateChange
+        }  
+      });
+    }
+    
+    // Triggered when the YouTube player is ready
+    function onPlayerReady(event) {   
+      event.target.playVideo(); 
+    }
+    
+    // Triggered when the YouTube player's state changes
+    function onPlayerStateChange(event) {      
+      // Do something when the player's state changes
+    }
   </script>
-</head>
-<body onload="init()">
-  <h1>Google API Search Example</h1>
-  <div id="searchForm">
-    <input type="text" id="query" placeholder="Search...">
-    <input type="text" id="videoQuery" placeholder="Search Videos...">
-    <button onclick="searchAll()">Search</button>
-  </div>
-  <div id="searchResults"></div>
 </body>
 </html>
+
 
